@@ -1,27 +1,43 @@
-# Realized Volatility Measurement and Forecasting
+# Does it matter how you measure realized volatility?
 
-Measurement and short-horizon forecasting of realized volatility on US equity data.
-Nasdaq TotalView-ITCH tick data (AAPL, ~1 year) via Databento; daily OHLC for the
-estimator comparison.
+Volatility forecasts are scored against "realized volatility," but that isn't
+something you observe, it's something you estimate, and there are several
+reasonable ways to do it. If reasonable people compute it differently, does the
+winning forecast model change?
 
-## Parts
+Using three years of Intel tick data (~25M trades), I build three estimates of
+each day's variance and ask that question twice: once about the estimate used to
+**grade** forecasts, and once about the estimate used to **train** them.
 
-1. **Volatility signature plot** — realized variance across sampling frequencies from
-   tick to 30 minutes, showing the bias–variance tradeoff: upward bias at high
-   frequency from bid-ask bounce, noise at low frequency.
-2. **Estimator comparison** — open-to-close, Parkinson, Garman–Klass, and
-   Rogers–Satchell ranked against 5-minute RV as the benchmark.
-3. **HAR forecasting** — daily/weekly/monthly lagged RV as OLS regressors, evaluated
-   with QLIKE loss and a Diebold–Mariano test against a naive persistence benchmark.
+## What I found
 
-The goal is honest measurement, not alpha. No trading strategy.
+**Grading barely matters.** Hold two forecasts fixed and switch the answer key,
+and the measured gap between them moves by three parts in a thousand
+(−0.0770 vs −0.0774). Model rankings are unchanged under all three estimates.
 
-## Setup
+**Training matters enormously for some models.** A persistence forecast built
+from squared daily returns scores +96.7. The identical model built from intraday
+realized variance scores −5.35, graded against the same target. A fitted model
+works out how much to trust a noisy input and discounts it automatically while
+a rule that says "tomorrow equals today" trusts its input completely.
 
-```bash
-uv venv
-source .venv/bin/activate
-uv pip install -r requirements.txt
-```
+Measurement error in what you're judged against averages out. Measurement error
+in what you act on doesn't, because you act before you know it was error.
 
-Requires a Databento API key in a `.env` file at the project root:
+## Start here
+
+**[`notebooks/04_results.ipynb`](notebooks/04_results.ipynb)** — the full writeup,
+with every figure and table.
+
+## Everything else
+
+| | |
+|---|---|
+| `01_signature.ipynb` | Picking the sampling interval (30s) from tick data |
+| `02_proxies.ipynb` | Building the three daily variance estimates |
+| `03_forecast.ipynb` | Naive, GARCH(1,1), and HAR forecasts; QLIKE scoring |
+| `04_results.ipynb` | **Results and discussion** |
+
+Data: INTC trades, Databento XNAS.ITCH, Jan 2023 – Dec 2025.
+Not redistributed — `01` and `02` need your own pull; `03` and `04` run from the
+cached daily panel in `data/`.
